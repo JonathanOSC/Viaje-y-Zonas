@@ -1,0 +1,284 @@
+openapi: 3.1.0
+info:
+  title: Viajes y Zonas - API MID
+  version: 1.1.0
+  description: Orquestación del inicio y finalización de viajes mediante Cuentas y Flota.
+servers:
+  - url: https://{gatewayHost}
+    variables:
+      gatewayHost:
+        default: gateway.example.test
+tags:
+  - name: MID Viajes
+paths:
+  /viajes/iniciar:
+    post:
+      tags: [MID Viajes]
+      summary: Iniciar viaje
+      operationId: iniciarViaje
+      security:
+        - oauth2: [viajes:escribir]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IniciarViajeRequest'
+      responses:
+        '201':
+          description: Viaje iniciado y vehículo reservado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IniciarViajeResponse'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Usuario o vehículo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Saldo insuficiente, batería insuficiente o vehículo no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Falló la persistencia después de reservar el vehículo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Cuentas, Flota o Gateway no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /viajes/{id}/finalizar:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    post:
+      tags: [MID Viajes]
+      summary: Finalizar viaje
+      operationId: finalizarViaje
+      security:
+        - oauth2: [viajes:escribir]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizarViajeRequest'
+      responses:
+        '200':
+          description: Viaje finalizado; incluye operaciones pendientes si una dependencia no confirmó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinalizarViajeResponse'
+        '400':
+          description: Coordenadas inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Viaje no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Viaje ya finalizado o ubicación fuera de Bogotá
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Dependencia no disponible antes de la finalización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: Token OAuth2 emitido o validado por el API Gateway.
+      flows:
+        clientCredentials:
+          tokenUrl: https://gateway.example.test/oauth/token
+          scopes:
+            viajes:leer: Consultar viajes
+            viajes:escribir: Iniciar y finalizar viajes
+  responses:
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Scope insuficiente
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    GeoJsonPoint:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type: { type: string, const: Point }
+        coordinates:
+          type: array
+          minItems: 2
+          maxItems: 2
+          prefixItems:
+            - { type: number, minimum: -180, maximum: 180 }
+            - { type: number, minimum: -90, maximum: 90 }
+    EstadoViaje:
+      type: string
+      enum: [iniciado, finalizado, cancelado]
+    ViajeResumen:
+      type: object
+      required: [id, usuarioId, vehiculoId, estado, inicioEn]
+      properties:
+        id: { type: integer, minimum: 1 }
+        usuarioId: { type: string }
+        vehiculoId: { type: string }
+        estado: { $ref: '#/components/schemas/EstadoViaje' }
+        inicioEn: { type: string, format: date-time }
+        finEn:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: 'null' }
+        origen: { $ref: '#/components/schemas/GeoJsonPoint' }
+        destino:
+          oneOf:
+            - $ref: '#/components/schemas/GeoJsonPoint'
+            - type: 'null'
+        minutos:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: 'null' }
+        zonaDestinoId:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+    IniciarViajeRequest:
+      type: object
+      additionalProperties: false
+      required: [usuarioId, vehiculoId]
+      properties:
+        usuarioId: { type: string, minLength: 1 }
+        vehiculoId: { type: string, minLength: 1 }
+    IniciarViajeResponse:
+      type: object
+      required: [viaje, vehiculo]
+      properties:
+        viaje: { $ref: '#/components/schemas/ViajeResumen' }
+        vehiculo:
+          type: object
+          required: [id, estado]
+          properties:
+            id: { type: string }
+            estado: { type: string, enum: [en_viaje] }
+    FinalizarViajeRequest:
+      type: object
+      additionalProperties: false
+      required: [lat, lng]
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+    Localidad:
+      type: object
+      required: [dentroDeBogota]
+      properties:
+        dentroDeBogota: { type: boolean }
+        localidad:
+          oneOf:
+            - type: object
+              required: [codigo, nombre]
+              properties:
+                codigo: { type: string }
+                nombre: { type: string }
+            - type: 'null'
+    ZonaDestino:
+      type: object
+      required: [id, nombre, tipo]
+      properties:
+        id: { type: string }
+        nombre: { type: string }
+        tipo:
+          type: string
+          enum: [prohibida, recargo, parqueo]
+    ActualizacionVehiculo:
+      type: object
+      required: [actualizacion]
+      properties:
+        actualizacion:
+          type: string
+          enum: [confirmada, pendiente]
+    Liquidacion:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          type: string
+          enum: [liquidada, pendiente]
+        desglose:
+          oneOf:
+            - type: object
+              required: [tarifaBase, recargo, descuento, total, saldoRestante]
+              properties:
+                tarifaBase: { type: integer }
+                recargo: { type: integer }
+                descuento: { type: integer }
+                total: { type: integer }
+                saldoRestante: { type: integer }
+            - type: 'null'
+    Advertencia:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo: { type: string }
+        mensaje: { type: string }
+    FinalizarViajeResponse:
+      type: object
+      required: [viaje, minutos, localidad, zonasDestino, multa, vehiculo, liquidacion, advertencias]
+      properties:
+        viaje: { $ref: '#/components/schemas/ViajeResumen' }
+        minutos: { type: integer, minimum: 0 }
+        localidad: { $ref: '#/components/schemas/Localidad' }
+        zonasDestino:
+          type: array
+          items: { $ref: '#/components/schemas/ZonaDestino' }
+        multa: { type: boolean }
+        vehiculo: { $ref: '#/components/schemas/ActualizacionVehiculo' }
+        liquidacion: { $ref: '#/components/schemas/Liquidacion' }
+        advertencias:
+          type: array
+          items: { $ref: '#/components/schemas/Advertencia' }
+    Error:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo: { type: string }
+        mensaje: { type: string }
+        detalle:
+          type: object
+          additionalProperties: true
+          default: {}
