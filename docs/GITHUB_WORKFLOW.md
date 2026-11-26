@@ -74,7 +74,7 @@ Crear etiquetas con nombres consistentes:
 
 ## 7. Pendientes de configuración
 
-- [ ] Crear la rama `develop`.
+- [x] Crear la rama `develop`.
 - [ ] Crear el Project Kanban y sus campos.
 - [ ] Añadir colaboradores.
 - [ ] Crear labels.
