@@ -30,13 +30,15 @@ Las llamadas entre servicios pasan por el gateway. El gateway agrega `X-Gateway-
 
 ## Documentación del repositorio
 
-- [Issue #2: incorporar y validar contratos OpenAPI CRUD y MID](https://github.com/JonathanOSC/Viaje-y-Zonas/issues/2) — contrato funcional preparado; pendiente de versionar los dos OpenAPI en el repo.
+- [Issue #2: incorporar y validar contratos OpenAPI CRUD y MID](https://github.com/JonathanOSC/Viaje-y-Zonas/issues/2) — pendiente de incorporar los dos contratos OpenAPI.
+- [Decisiones técnicas y arquitectura: ADR-001](docs/decisions/ADR-001-stack-y-arquitectura.md).
+- [Variables de entorno](.env.example).
 - [Contribución y Pull Requests](CONTRIBUTING.md).
 - [Configuración de GitHub, tablero y protección de ramas](docs/GITHUB_WORKFLOW.md).
 
 ## Estado del desarrollo
 
-El repositorio se encuentra en fase inicial. Antes de implementar se deben acordar la tecnología de las APIs, estructura de despliegue, regla para destinos fuera de Bogotá, variables/scopes del gateway y estrategia de API de tercero. El valor de referencia inicial de `SALDO_MINIMO` fijado por el clúster es **5.000 COP** y debe mantenerse configurable. Las decisiones pendientes se deben registrar en Issues y documentarse.
+El repositorio se encuentra en fase inicial. La documentación entregada ya fija el saldo mínimo de **5.000 COP**, la batería mínima de **15 %**, la reserva atómica de Flota, la tarifa base y los recargos/promociones descritos por el clúster. Antes de implementar deben acordarse el redondeo exacto de minutos, el cuerpo definitivo de liquidación, la exposición interna de `POST /viajes`, los scopes y credenciales del Gateway, la administración de zonas y el API de tercero que consumirá el MID. Las decisiones pendientes se registran en el ADR y deben resolverse por Issue.
 
 ## Flujo de trabajo
 
