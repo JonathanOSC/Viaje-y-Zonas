@@ -5,14 +5,14 @@
 El repositorio utiliza un flujo GitFlow simplificado:
 
 - `main`: versión estable y entregable. No se trabaja directamente sobre esta rama.
-- `develop`: integración del trabajo aprobado.
+- `develop`: rama de integración del trabajo aprobado.
 - `feature/<issue>-<descripcion>`: nuevas funcionalidades.
 - `fix/<issue>-<descripcion>`: correcciones.
 - `test/<issue>-<descripcion>`: pruebas.
 - `docs/<issue>-<descripcion>`: documentación.
 - `chore/<descripcion>`: configuración y mantenimiento.
 
-Toda rama de trabajo debe partir de `develop). Las funcionalidades se integran mediante Pull Request hacia `develop). La publicación estable se realiza desde `develop) hacia `main).
+Toda rama de trabajo debe partir de `develop`. Las funcionalidades se integran mediante Pull Request hacia `develop`. La publicación estable se realiza mediante un Pull Request de `develop` hacia `main`.
 
 ## Commits
 
@@ -24,17 +24,17 @@ Usar Conventional Commits, en español o inglés, con mensajes concretos:
 - `docs: documentar integración con Flota`
 - `ci: validar contrato OpenAPI`
 
-Un commit debe representar un cambio lógico pequeño. No incluir secretos, archivos `.env), tokens, credenciales ni datos personales.
+Un commit debe representar un cambio lógico pequeño. No incluir secretos, archivos `.env`, tokens, credenciales ni datos personales.
 
 ## Pull Requests obligatorios
 
-1. Crear una rama desde `develop) y relacionarla con una Issue.
+1. Crear una rama desde `develop` y relacionarla con una Issue.
 2. Mantener la rama enfocada en una sola tarea.
-3. Abrir un Pull Request hacia `develop). No hacer push directo a `main) ni a `develop).
+3. Abrir un Pull Request hacia `develop`. No hacer push directo a `main` ni a `develop`.
 4. Usar la plantilla de PR y escribir `Closes #<issue>` cuando corresponda.
 5. Solicitar al menos una revisión de otro integrante que no sea el autor.
 6. Resolver comentarios y volver a solicitar revisión cuando se actualice el PR.
-7. Esperar que los checks de CI terminen correctamente.
+7. Esperar que los checks de CI terminen correctamente, cuando el workflow esté configurado.
 8. Fusionar con **Squash and merge** o el método acordado por el equipo. Eliminar la rama una vez fusionada.
 
 No aprobar ni fusionar el propio PR. Los cambios de contrato que afecten a Flota o Cuentas requieren revisión del equipo consumidor/proveedor correspondiente.
@@ -54,7 +54,7 @@ No aprobar ni fusionar el propio PR. Los cambios de contrato que afecten a Flota
 - Pruebas unitarias y de integración relevantes.
 - Sin secretos ni URLs de otros servicios codificadas en duro.
 - Docker/local run documentado cuando aplique.
-- CI aprobado.
+- CI aprobado, cuando corresponda.
 - Pull Request revisado y fusionado.
 - README/contrato actualizados si cambió el comportamiento.
 
