@@ -1,0 +1,568 @@
+openapi: 3.1.0
+info:
+  title: Viajes y Zonas - API CRUD
+  version: 1.1.0
+  description: Persistencia y consulta de viajes y administración de zonas geográficas.
+servers:
+  - url: https://{gatewayHost}
+    variables:
+      gatewayHost:
+        default: gateway.example.test
+tags:
+  - name: Viajes
+  - name: Zonas
+  - name: Salud
+paths:
+  /viajes:
+    get:
+      tags: [Viajes]
+      summary: Listar viajes
+      operationId: listarViajes
+      security:
+        - oauth2: [viajes:leer]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/ViajesSort'
+        - name: usuarioId
+          in: query
+          schema: { type: string }
+        - name: vehiculoId
+          in: query
+          schema: { type: string }
+        - name: estado
+          in: query
+          schema:
+            $ref: '#/components/schemas/EstadoViaje'
+        - name: desde
+          in: query
+          schema: { type: string, format: date-time }
+        - name: hasta
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Página de viajes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaViajes'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Viajes]
+      summary: Crear viaje desde el MID
+      description: Operación interna. El Gateway no debe exponerla a clientes finales.
+      operationId: crearViajeInterno
+      x-internal: true
+      security:
+        - oauth2: [viajes:escribir]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearViaje'
+      responses:
+        '201':
+          description: Viaje iniciado creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Viaje'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /viajes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      tags: [Viajes]
+      summary: Consultar viaje por identificador
+      operationId: obtenerViaje
+      security:
+        - oauth2: [viajes:leer]
+      responses:
+        '200':
+          description: Viaje encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Viaje'
+        '404': { $ref: '#/components/responses/NotFoundViaje' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [Viajes]
+      summary: Actualizar observación administrativa
+      operationId: actualizarObservacionViaje
+      security:
+        - oauth2: [viajes:escribir]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarObservacion'
+      responses:
+        '200':
+          description: Observación actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Viaje'
+        '400':
+          description: Campo protegido o cuerpo inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404': { $ref: '#/components/responses/NotFoundViaje' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /zonas:
+    get:
+      tags: [Zonas]
+      summary: Listar zonas
+      operationId: listarZonas
+      security:
+        - oauth2: [zonas:leer]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: tipo
+          in: query
+          schema:
+            $ref: '#/components/schemas/TipoZona'
+      responses:
+        '200':
+          description: Página de zonas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaZonas'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Zonas]
+      summary: Crear zona
+      operationId: crearZona
+      security:
+        - oauth2: [zonas:escribir]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZonaEntrada'
+      responses:
+        '201':
+          description: Zona creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zona'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /zonas/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Zonas]
+      summary: Consultar zona por identificador
+      operationId: obtenerZona
+      security:
+        - oauth2: [zonas:leer]
+      responses:
+        '200':
+          description: Zona encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zona'
+        '404': { $ref: '#/components/responses/NotFoundZona' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Zonas]
+      summary: Reemplazar zona
+      operationId: reemplazarZona
+      security:
+        - oauth2: [zonas:escribir]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZonaEntrada'
+      responses:
+        '200':
+          description: Zona reemplazada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zona'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFoundZona' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [Zonas]
+      summary: Actualizar parcialmente una zona
+      operationId: actualizarZona
+      security:
+        - oauth2: [zonas:escribir]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZonaActualizacion'
+      responses:
+        '200':
+          description: Zona actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zona'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFoundZona' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Zonas]
+      summary: Eliminar zona
+      operationId: eliminarZona
+      security:
+        - oauth2: [zonas:escribir]
+      responses:
+        '204': { description: Zona eliminada }
+        '404': { $ref: '#/components/responses/NotFoundZona' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /viajes/zonas/verificar:
+    get:
+      tags: [Zonas]
+      summary: Ruta pública del Gateway para verificar geocercas
+      description: La ruta pública se reescribe internamente a /zonas/verificar.
+      operationId: verificarPuntoPorGateway
+      security:
+        - oauth2: [zonas:leer]
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: lng
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+      responses:
+        '200':
+          description: Resultado de la verificación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificacionZona'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /zonas/verificar:
+    get:
+      tags: [Zonas]
+      summary: Verificar geocercas que contienen un punto
+      operationId: verificarPunto
+      security:
+        - oauth2: [zonas:leer]
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: lng
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+      responses:
+        '200':
+          description: Resultado de la verificación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificacionZona'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /health:
+    get:
+      tags: [Salud]
+      summary: Liveness
+      security: []
+      responses:
+        '200':
+          description: Servicio vivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /ready:
+    get:
+      tags: [Salud]
+      summary: Readiness
+      security: []
+      responses:
+        '200':
+          description: Persistencia disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ready'
+        '503':
+          description: Persistencia no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: Token OAuth2 emitido o validado por el API Gateway.
+      flows:
+        clientCredentials:
+          tokenUrl: https://gateway.example.test/oauth/token
+          scopes:
+            viajes:leer: Consultar viajes
+            viajes:escribir: Crear o actualizar viajes
+            zonas:leer: Consultar zonas
+            zonas:escribir: Administrar zonas
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+    ViajesSort:
+      name: sort
+      in: query
+      description: Campo permitido seguido de asc o desc.
+      schema:
+        type: string
+        enum:
+          - inicioEn,asc
+          - inicioEn,desc
+          - finEn,asc
+          - finEn,desc
+          - id,asc
+          - id,desc
+          - minutos,asc
+          - minutos,desc
+        default: inicioEn,desc
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Scope insuficiente
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFoundViaje:
+      description: Viaje no encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFoundZona:
+      description: Zona no encontrada
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    EstadoViaje:
+      type: string
+      enum: [iniciado, finalizado, cancelado]
+    TipoZona:
+      type: string
+      enum: [prohibida, recargo, parqueo]
+    GeoJsonPoint:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type: { type: string, const: Point }
+        coordinates:
+          type: array
+          minItems: 2
+          maxItems: 2
+          prefixItems:
+            - { type: number, minimum: -180, maximum: 180 }
+            - { type: number, minimum: -90, maximum: 90 }
+    GeoJsonPolygon:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type: { type: string, const: Polygon }
+        coordinates:
+          type: array
+          description: Primer anillo exterior y huecos opcionales.
+          items:
+            type: array
+            minItems: 4
+            items:
+              type: array
+              minItems: 2
+              maxItems: 2
+              prefixItems:
+                - { type: number }
+                - { type: number }
+    Viaje:
+      type: object
+      required: [id, usuarioId, vehiculoId, estado, inicioEn, origen]
+      properties:
+        id: { type: integer, minimum: 1 }
+        usuarioId: { type: string }
+        vehiculoId: { type: string }
+        estado: { $ref: '#/components/schemas/EstadoViaje' }
+        inicioEn: { type: string, format: date-time }
+        finEn:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: 'null' }
+        origen: { $ref: '#/components/schemas/GeoJsonPoint' }
+        destino:
+          oneOf:
+            - $ref: '#/components/schemas/GeoJsonPoint'
+            - type: 'null'
+        minutos:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: 'null' }
+        zonaDestinoId:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+        observacion:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+    CrearViaje:
+      type: object
+      required: [usuarioId, vehiculoId, inicioEn, origen]
+      additionalProperties: false
+      properties:
+        usuarioId: { type: string }
+        vehiculoId: { type: string }
+        inicioEn: { type: string, format: date-time }
+        origen: { $ref: '#/components/schemas/GeoJsonPoint' }
+    ActualizarObservacion:
+      type: object
+      required: [observacion]
+      additionalProperties: false
+      properties:
+        observacion: { type: string, minLength: 1, maxLength: 500 }
+    ListaViajes:
+      type: object
+      required: [content, pageNumber, pageSize, totalElements, totalPages]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Viaje' }
+        pageNumber: { type: integer, minimum: 0 }
+        pageSize: { type: integer, minimum: 1 }
+        totalElements: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+    Zona:
+      type: object
+      required: [id, nombre, tipo, poligono]
+      properties:
+        id: { type: string }
+        nombre: { type: string, minLength: 1 }
+        tipo: { $ref: '#/components/schemas/TipoZona' }
+        poligono: { $ref: '#/components/schemas/GeoJsonPolygon' }
+    ZonaEntrada:
+      type: object
+      required: [nombre, tipo, poligono]
+      additionalProperties: false
+      properties:
+        nombre: { type: string, minLength: 1, maxLength: 200 }
+        tipo: { $ref: '#/components/schemas/TipoZona' }
+        poligono: { $ref: '#/components/schemas/GeoJsonPolygon' }
+    ZonaActualizacion:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        nombre: { type: string, minLength: 1, maxLength: 200 }
+        tipo: { $ref: '#/components/schemas/TipoZona' }
+        poligono: { $ref: '#/components/schemas/GeoJsonPolygon' }
+    ListaZonas:
+      type: object
+      required: [content, pageNumber, pageSize, totalElements, totalPages]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Zona' }
+        pageNumber: { type: integer, minimum: 0 }
+        pageSize: { type: integer, minimum: 1 }
+        totalElements: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+    VerificacionZona:
+      type: object
+      required: [permitida, zonas]
+      properties:
+        permitida: { type: boolean }
+        zonas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZonaResumen'
+    ZonaResumen:
+      type: object
+      required: [id, nombre, tipo]
+      properties:
+        id: { type: string }
+        nombre: { type: string }
+        tipo: { $ref: '#/components/schemas/TipoZona' }
+    Error:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo: { type: string }
+        mensaje: { type: string }
+        detalle:
+          type: object
+          additionalProperties: true
+          default: {}
+    Health:
+      type: object
+      required: [status, service, timestamp]
+      properties:
+        status: { type: string, enum: [UP] }
+        service: { type: string }
+        timestamp: { type: string, format: date-time }
+    Ready:
+      type: object
+      required: [status, service, dependencies]
+      properties:
+        status: { type: string, enum: [READY] }
+        service: { type: string }
+        dependencies:
+          type: object
+          additionalProperties: { type: string }

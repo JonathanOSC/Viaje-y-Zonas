@@ -30,7 +30,9 @@ Las llamadas entre servicios pasan por el gateway. El gateway agrega `X-Gateway-
 
 ## Documentación del repositorio
 
-- [Issue #2: incorporar y validar contratos OpenAPI CRUD y MID](https://github.com/JonathanOSC/Viaje-y-Zonas/issues/2) — contrato funcional preparado; pendiente de versionar los dos OpenAPI en el repo.
+- [Issue #2: incorporar y validar contratos OpenAPI CRUD y MID](https://github.com/JonathanOSC/Viaje-y-Zonas/issues/2) — contratos OpenAPI versionados; pendientes la revisión cruzada y los acuerdos del Gateway.
+- [Contrato OpenAPI CRUD](docs/openapi-crud.yaml).
+- [Contrato OpenAPI MID](docs/openapi-mid.yaml).
 - [Contribución y Pull Requests](CONTRIBUTING.md).
 - [Configuración de GitHub, tablero y protección de ramas](docs/GITHUB_WORKFLOW.md).
 
