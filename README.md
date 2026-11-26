@@ -26,7 +26,7 @@ El contrato OpenAPI acordado es la fuente de verdad para rutas, modelos, scopes,
 | MID Viajes → Cuentas | `GET /usuarios/{id}/billetera`, `POST /liquidaciones` |
 | MID Viajes → Flota | `GET /vehiculos/{id}`, `PATCH /vehiculos/{id}/estado`, `GET /localidades/verificar` |
 
-Las llamadas entre servicios pasan por el gateway. El gateway agrega `X-Gateway-Secret); no se expone a consumidores.
+Las llamadas entre servicios pasan por el gateway. El gateway agrega `X-Gateway-Secret`; no se expone a consumidores.
 
 ## Documentación del repositorio
 
@@ -36,7 +36,7 @@ Las llamadas entre servicios pasan por el gateway. El gateway agrega `X-Gateway-
 
 ## Estado del desarrollo
 
-El repositorio se encuentra en fase inicial. Antes de implementar se deben acordar la tecnología de las APIs, estructura de despliegue, saldo mínimo, regla para destinos fuera de Bogotá, variables del gateway y estrategia de API de tercero. Las decisiones pendientes se deben registrar en Issues y documentarse.
+El repositorio se encuentra en fase inicial. Antes de implementar se deben acordar la tecnología de las APIs, estructura de despliegue, regla para destinos fuera de Bogotá, variables/scopes del gateway y estrategia de API de tercero. El valor de referencia inicial de `SALDO_MINIMO` fijado por el clúster es **5.000 COP** y debe mantenerse configurable. Las decisiones pendientes se deben registrar en Issues y documentarse.
 
 ## Flujo de trabajo
 
