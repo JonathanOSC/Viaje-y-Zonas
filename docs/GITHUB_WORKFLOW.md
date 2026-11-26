@@ -13,13 +13,15 @@ Crear las vistas:
 - **Roadmap**: vista Table con Issue, Priority, Sprint, Status y Assignees.
 
 Campos sugeridos:
-- `Status` (Single select): Backlog, Ready, In progress, In review, Blocked, Done.
+- `Status` (Single select): Por hacer, Ready, En progreso, En revisión, Bloqueado, Hecho. Las cuatro columnas mínimas del enunciado son Por hacer, En progreso, En revisión y Hecho.
 - `Priority` (Single select): P0 - Bloqueante, P1 - Alta, P2 - Media, P3 - Baja.
 - `Sprint` (Iteration): configurar iteraciones según las fechas reales del equipo.
 - `Estimate` (Number): puntos o tamaño acordado.
 - `Area` (Single select): CRUD Viajes, CRUD Zonas, MID, Integración, Calidad, DevOps, Documentación.
 
 Añadir las Issues del repositorio al Project. Automatizar, cuando esté disponible, el estado al abrir/cerrar Issues y al abrir/mergear PRs. Mantener un responsable por Issue; dividir tareas grandes.
+
+**Límite WIP:** máximo 2 tareas por integrante en `En progreso`. Las Issues bloqueadas deben pasar a `Bloqueado` e indicar qué dependencia falta.
 
 ## 2. Proteger `main` y `develop`
 
@@ -72,10 +74,20 @@ Crear etiquetas con nombres consistentes:
 6. Tras CI verde y conversaciones resueltas, fusionar.
 7. Verificar que la Issue se cierre y el elemento pase a Done.
 
-## 7. Pendientes de configuración
+## 7. Cadencia Scrumban y evidencia
+
+- Realizar sincronizaciones cortas de 10–15 minutos varias veces por semana.
+- Al cierre de cada semana, realizar revisión y retrospectiva.
+- Guardar notas breves en `docs/meetings/` con fecha, avances, bloqueos y acciones acordadas.
+- Acordar en el tablero del clúster los trabajos cruzados (contratos, scopes, rutas y gateway).
+- Cada integrante debe tener PRs propios y revisar PRs de compañeros. El historial debe reflejar commits, comentarios y aprobaciones de todos.
+
+## 8. Pendientes de configuración
 
 - [x] Crear la rama `develop`.
 - [ ] Crear el Project Kanban y sus campos.
+- [ ] Aplicar límite WIP de máximo 2 Issues por persona en `En progreso`.
+- [ ] Crear carpeta `docs/meetings/` para evidencias de sincronizaciones y retrospectivas.
 - [ ] Añadir colaboradores.
 - [ ] Crear labels.
 - [ ] Activar reglas de protección en `main` y `develop`.
