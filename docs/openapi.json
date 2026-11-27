@@ -1,0 +1,534 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Viajes y zonas — API CRUD",
+    "description": "Persistencia propia de viajes y zonas (PostgreSQL + PostGIS) del clúster Rodar. Solo gestiona tablas propias: `viajes` y `zonas`. No almacena usuarios, billeteras ni vehículos (pertenecen a Cuentas y Flota).",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Grupo Viajes y zonas — cluster Rodar"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8100",
+      "description": "Desarrollo local"
+    },
+    {
+      "url": "https://api-viajes-zonas.example.test",
+      "description": "Producción (administrada)"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Estado del servicio",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Servicio operativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "service": { "type": "string", "example": "viajes-zonas-crud" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zonas": {
+      "get": {
+        "tags": ["zonas"],
+        "summary": "Lista zonas con filtro opcional por tipo",
+        "operationId": "listar_zonas",
+        "security": [{ "GatewaySecret": [] }],
+        "parameters": [
+          { "name": "tipo", "in": "query", "schema": { "type": "string", "enum": ["prohibida", "recargo", "parqueo"] }, "description": "Filtrar por tipo de zona" },
+          { "name": "limite", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "minimum": 0, "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de zonas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "zonas": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/ZonaOut" }
+                    },
+                    "total": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      },
+      "post": {
+        "tags": ["zonas"],
+        "summary": "Crea una zona",
+        "operationId": "crear_zona",
+        "security": [{ "GatewaySecret": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ZonaCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Zona creada",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ZonaOut" } } }
+          },
+          "400": { "$ref": "#/components/responses/Error400" },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      }
+    },
+    "/zonas/{zona_id}": {
+      "get": {
+        "tags": ["zonas"],
+        "summary": "Obtiene una zona por su id",
+        "operationId": "obtener_zona",
+        "security": [{ "GatewaySecret": [] }],
+        "parameters": [
+          { "name": "zona_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zona encontrada",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ZonaOut" } } }
+          },
+          "404": { "$ref": "#/components/responses/Error404" },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      },
+      "put": {
+        "tags": ["zonas"],
+        "summary": "Actualiza una zona",
+        "operationId": "actualizar_zona",
+        "security": [{ "GatewaySecret": [] }],
+        "parameters": [
+          { "name": "zona_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ZonaUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Zona actualizada",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ZonaOut" } } }
+          },
+          "400": { "$ref": "#/components/responses/Error400" },
+          "404": { "$ref": "#/components/responses/Error404" },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      },
+      "delete": {
+        "tags": ["zonas"],
+        "summary": "Elimina una zona",
+        "operationId": "borrar_zona",
+        "security": [{ "GatewaySecret": [] }],
+        "parameters": [
+          { "name": "zona_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Zona eliminada" },
+          "404": { "$ref": "#/components/responses/Error404" },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      }
+    },
+    "/zonas/verificar": {
+      "get": {
+        "tags": ["zonas"],
+        "summary": "Verifica en qué zonas cae un punto (punto-en-polígono)",
+        "operationId": "verificar_punto",
+        "security": [{ "GatewaySecret": [] }],
+        "scope": "zonas:leer",
+        "parameters": [
+          { "name": "lat", "in": "query", "required": true, "schema": { "type": "number", "minimum": -90, "maximum": 90 }, "description": "Latitud en grados decimales" },
+          { "name": "lng", "in": "query", "required": true, "schema": { "type": "number", "minimum": -180, "maximum": 180 }, "description": "Longitud en grados decimales" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado de la verificación",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VerificarOut" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error400" },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      }
+    },
+    "/viajes": {
+      "get": {
+        "tags": ["viajes"],
+        "summary": "Lista viajes con filtros",
+        "operationId": "listar_viajes",
+        "security": [{ "GatewaySecret": [] }],
+        "parameters": [
+          { "name": "usuarioId", "in": "query", "schema": { "type": "string" }, "description": "Filtrar por usuario (ref lógica a Cuentas)" },
+          { "name": "estado", "in": "query", "schema": { "type": "string", "enum": ["iniciado", "finalizado", "cancelado"] } },
+          { "name": "desde", "in": "query", "schema": { "type": "string", "format": "date-time" }, "description": "Fecha inicio (inclusive)" },
+          { "name": "hasta", "in": "query", "schema": { "type": "string", "format": "date-time" }, "description": "Fecha fin (inclusive)" },
+          { "name": "limite", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "minimum": 0, "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de viajes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "viajes": { "type": "array", "items": { "$ref": "#/components/schemas/ViajeOut" } },
+                    "total": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      },
+      "post": {
+        "tags": ["viajes"],
+        "summary": "Crea un viaje (estado iniciado)",
+        "operationId": "crear_viaje",
+        "security": [{ "GatewaySecret": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ViajeCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Viaje creado",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ViajeOut" } } }
+          },
+          "400": { "$ref": "#/components/responses/Error400" },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      }
+    },
+    "/viajes/{viaje_id}": {
+      "get": {
+        "tags": ["viajes"],
+        "summary": "Obtiene un viaje por su id",
+        "operationId": "obtener_viaje",
+        "security": [{ "GatewaySecret": [] }],
+        "parameters": [
+          { "name": "viaje_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Viaje encontrado",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ViajeOut" } } }
+          },
+          "404": { "$ref": "#/components/responses/Error404" },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      },
+      "patch": {
+        "tags": ["viajes"],
+        "summary": "Actualiza un viaje",
+        "operationId": "actualizar_viaje",
+        "security": [{ "GatewaySecret": [] }],
+        "parameters": [
+          { "name": "viaje_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ViajeUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Viaje actualizado",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ViajeOut" } } }
+          },
+          "400": { "$ref": "#/components/responses/Error400" },
+          "404": { "$ref": "#/components/responses/Error404" },
+          "409": { "$ref": "#/components/responses/Error409" },
+          "401": { "$ref": "#/components/responses/Error401" },
+          "403": { "$ref": "#/components/responses/Error403" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "GatewaySecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Gateway-Secret",
+        "description": "Cabecera secreta agregada por el API Gateway. Los servicios rechazan peticiones sin ella."
+      }
+    },
+    "schemas": {
+      "ZonaBase": {
+        "type": "object",
+        "required": ["nombre", "tipo", "poligono"],
+        "properties": {
+          "nombre": { "type": "string", "minLength": 1, "maxLength": 120, "example": "Zona Prohibida - Centro Comercial Andino" },
+          "tipo": { "type": "string", "enum": ["prohibida", "recargo", "parqueo"], "example": "prohibida" },
+          "poligono": {
+            "type": "object",
+            "description": "Polígono GeoJSON [lng, lat], SRID 4326, anillo cerrado.",
+            "properties": {
+              "type": { "type": "string", "example": "Polygon" },
+              "coordinates": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "example": [-74.0725, 4.7105]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ZonaCreate": {
+        "allOf": [ { "$ref": "#/components/schemas/ZonaBase" } ]
+      },
+      "ZonaUpdate": {
+        "type": "object",
+        "properties": {
+          "nombre": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "tipo": { "type": "string", "enum": ["prohibida", "recargo", "parqueo"] },
+          "poligono": { "type": "object" }
+        }
+      },
+      "ZonaOut": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ZonaBase" },
+          {
+            "type": "object",
+            "required": ["id", "creado_en", "actualizado_en"],
+            "properties": {
+              "id": { "type": "string", "example": "zona-0001" },
+              "creado_en": { "type": "string", "format": "date-time" },
+              "actualizado_en": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "ViajeBase": {
+        "type": "object",
+        "required": ["usuario_id", "vehiculo_id"],
+        "properties": {
+          "usuario_id": { "type": "string", "example": "usr-0001", "description": "Referencia lógica a Cuentas (no se almacenan datos de usuario)" },
+          "vehiculo_id": { "type": "string", "example": "veh-0001", "description": "Referencia lógica a Flota (no se almacenan datos de vehículo)" },
+          "estado": { "type": "string", "enum": ["iniciado", "finalizado", "cancelado"], "default": "iniciado" },
+          "minutos": { "type": "integer", "minimum": 0, "example": 12 },
+          "multa": { "type": "boolean", "default": false }
+        }
+      },
+      "ViajeCreate": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ViajeBase" },
+          {
+            "type": "object",
+            "properties": {
+              "origen": {
+                "type": "object",
+                "description": "Punto de inicio GeoJSON [lng, lat], SRID 4326",
+                "properties": {
+                  "type": { "type": "string", "example": "Point" },
+                  "coordinates": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2, "example": [-74.0721, 4.7110] }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ViajeUpdate": {
+        "type": "object",
+        "properties": {
+          "estado": { "type": "string", "enum": ["iniciado", "finalizado", "cancelado"] },
+          "destino": {
+            "type": "object",
+            "description": "Punto de destino GeoJSON [lng, lat], SRID 4326",
+            "properties": {
+              "type": { "type": "string", "example": "Point" },
+              "coordinates": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 }
+            }
+          },
+          "minutos": { "type": "integer", "minimum": 0 },
+          "multa": { "type": "boolean" }
+        }
+      },
+      "ViajeOut": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ViajeBase" },
+          {
+            "type": "object",
+            "required": ["id", "inicio_en", "creado_en", "actualizado_en"],
+            "properties": {
+              "id": { "type": "string", "example": "viaj-0001" },
+              "inicio_en": { "type": "string", "format": "date-time" },
+              "fin_en": { "type": "string", "format": "date-time", "nullable": true },
+              "origen": { "type": "object", "nullable": true },
+              "destino": { "type": "object", "nullable": true },
+              "creado_en": { "type": "string", "format": "date-time" },
+              "actualizado_en": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "PuntoVerificar": {
+        "type": "object",
+        "required": ["lat", "lng"],
+        "properties": {
+          "lat": { "type": "number", "minimum": -90, "maximum": 90, "example": 4.7115 },
+          "lng": { "type": "number", "minimum": -180, "maximum": 180, "example": -74.0710 }
+        }
+      },
+      "ZonaEncontrada": {
+        "type": "object",
+        "required": ["id", "nombre", "tipo"],
+        "properties": {
+          "id": { "type": "string", "example": "zona-0001" },
+          "nombre": { "type": "string", "example": "Zona Prohibida - Centro Comercial Andino" },
+          "tipo": { "type": "string", "enum": ["prohibida", "recargo", "parqueo"] }
+        }
+      },
+      "VerificarOut": {
+        "type": "object",
+        "required": ["lat", "lng", "permitida", "zonas"],
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "permitida": { "type": "boolean", "description": "false si el punto cae en alguna zona prohibida" },
+          "zonas": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ZonaEncontrada" }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Solicitud inválida (validación, polígono mal formado, etc.)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "codigo": { "type": "string", "example": "validacion_invalida" },
+                "mensaje": { "type": "string" },
+                "detalle": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "Token ausente, inválido o vencido (producido por el gateway)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "codigo": { "type": "string", "example": "token_invalido" },
+                "mensaje": { "type": "string" },
+                "detalle": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Alcance insuficiente para la operación",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "codigo": { "type": "string", "example": "alcance_insuficiente" },
+                "mensaje": { "type": "string" },
+                "detalle": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "Recurso no encontrado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "codigo": { "type": "string", "example": "recurso_no_encontrado" },
+                "mensaje": { "type": "string" },
+                "detalle": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "Conflicto (estado inválido, viaje ya finalizado, etc.)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "codigo": { "type": "string", "example": "conflicto" },
+                "mensaje": { "type": "string" },
+                "detalle": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "zonas", "description": "Gestión de zonas (geocercas): CRUD y verificación punto-en-polígono" },
+    { "name": "viajes", "description": "Gestión de viajes: CRUD, filtros por usuario, estado y fechas" },
+    { "name": "health", "description": "Estado del servicio" }
+  ]
+}

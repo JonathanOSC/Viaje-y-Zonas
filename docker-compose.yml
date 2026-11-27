@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: viajes-zonas-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: viajes_zonas
+      POSTGRES_USER: viajes_zonas
+      # Contraseña solo de desarrollo local. En producción usar secreto administrado.
+      POSTGRES_PASSWORD: viajes_zonas_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - viajes_zonas_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viajes_zonas -d viajes_zonas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  viajes_zonas_data:

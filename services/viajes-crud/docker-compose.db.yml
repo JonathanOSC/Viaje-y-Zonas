@@ -1,0 +1,30 @@
+# Base de datos local para desarrollo del CRUD de Viajes y zonas (PostgreSQL con PostGIS).
+# Los datos viven en el volumen "viajes_pgdata" y sobreviven a `docker compose down`.
+# Para borrarlos a propósito: `docker compose -f docker-compose.db.yml down -v`.
+#
+# Uso:
+#   export POSTGRES_PASSWORD=<una clave local>
+#   docker compose -f docker-compose.db.yml up -d
+#   export DATABASE_URL=postgresql+psycopg://viajes:$POSTGRES_PASSWORD@localhost:5432/viajes_zonas
+#   alembic upgrade head && python -m app.db.seed
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: viajes-zonas-db
+    environment:
+      POSTGRES_USER: viajes
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en tu entorno}
+      POSTGRES_DB: viajes_zonas
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - viajes_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viajes -d viajes_zonas"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  viajes_pgdata:
